@@ -190,7 +190,8 @@ set(hm,'Name','GazeCode','NumberTitle','off');
 hmmar       = [150 100];
 
 set(hm, 'Units', 'pixels');
-ws          = get(0,'ScreenSize');
+ws          = truescreensize();
+ws          = [1 1 ws ];
 
 % set figure full screen, position is bottom left width height!;
 set(hm,'Position',[ws(1) + hmmar(1), ws(2) + hmmar(2), ws(3)-2*hmmar(1), ws(4)-2*hmmar(2)]);
@@ -221,6 +222,7 @@ sm1         = uimenu(mm1,'Label','About GazeCode','CallBack','uiwait(msgbox(''Th
 %% left panel (Child 2 of hm), don't change this section if you're not sure what you are doing 
 lp          = uipanel(hm,'Title','Fix Playback/Lookup','Units','pixels','FontSize',16,'BackgroundColor',[0.8 0.8 0.8]);
 lpmar       = [50 20];
+gv.lp       = lp;
 
 set(lp,'Position',[1+lpmar(1) 1+lpmar(2) (hmxmax/2)-2*lpmar(1) hmymax-2*lpmar(2)]);
 lpsize = get(lp,'Position');
@@ -285,6 +287,7 @@ for p = 1:size(gridpos,1)
     set(gv.knoppen(p),'userdata',p);
     imgData = imread([gv.catfoldnaam gv.fs num2str(p) '.png']);
     imgData = imgData./maxall(imgData);
+    imgData = double(imgData);
     set(gv.knoppen(p),'CData',imgData);
 end
 set(hm,'userdata',gv);
@@ -405,8 +408,8 @@ if ~skipdataload
             
             [gv.datt, gv.datx, gv.daty] = leesgazedataTobii([filepad gv.fs filenaam]);
             
-            gv.datx = gv.datx * gv.wcr(1) - gv.wcr(1)/2;
-            gv.daty = gv.daty * gv.wcr(2) - gv.wcr(2)/2;
+            %gv.datx = gv.datx * gv.wcr(1) - gv.wcr(1)/2;
+            %gv.daty = gv.daty * gv.wcr(2) - gv.wcr(2)/2;
             
         otherwise
             disp('Unknown data type, crashing in 3,2,1,...');
@@ -520,13 +523,14 @@ end
 function showmainfr(hm,gv)
 plaat = read(gv.vidObj,gv.mfr(gv.curfix));
 imagesc(plaat);
-gv.frameas = gca;
+frameas = gca;
 axis off;
 axis equal;
 % clc;
 disp(['Current fixation: ', num2str(gv.curfix),'/',num2str(gv.maxfix)]);
 
-hold(gv.frameas,'off');
+set(gv.lp,'Title',['Current fixation: ' num2str(gv.curfix),'/',num2str(gv.maxfix) ]);
+hold(frameas,'off');
 setlabel(gv);
 
 if isempty(gv.data(:,end)==0)
@@ -586,30 +590,31 @@ end
 function verwerkknop(src,evt)
 gv = get(src,'userdata');
 tsrc = get(src,'Children');
+% Simplified as per suggestion of D.C. Niehorster on 2018-03-29
 switch evt.Key
-    case gv.fwdbut
+     case gv.fwdbut
         playforward(findobj('UserData',gv.fwdbut),evt);
-    case gv.bckbut
+     case gv.bckbut
         playback(findobj('UserData',gv.bckbut),evt);
-    case gv.cat1but
+     case gv.cat1but
         labelfix(findobj('UserData',1),evt);
-    case gv.cat2but
+     case gv.cat2but
         labelfix(findobj('UserData',2),evt);
-    case gv.cat3but
+     case gv.cat3but
         labelfix(findobj('UserData',3),evt);
-    case gv.cat4but
+     case gv.cat4but
         labelfix(findobj('UserData',4),evt);
-    case gv.cat5but
+     case gv.cat5but
         labelfix(findobj('UserData',5),evt);
-    case gv.cat6but
+     case gv.cat6but
         labelfix(findobj('UserData',6),evt);
-    case gv.cat7but
+     case gv.cat7but
         labelfix(findobj('UserData',7),evt);
-    case gv.cat8but
+     case gv.cat8but
         labelfix(findobj('UserData',8),evt);
-    case gv.cat9but
+     case gv.cat9but
         labelfix(findobj('UserData',9),evt);
-    case gv.cat0but
+     case gv.cat0but
         % pushing command buttons also codes as 0, so check whether
         % evt.Modifier is empty to discern a command key with key zero
         if isempty(evt.Modifier)
@@ -647,7 +652,8 @@ knopsluit = questdlg('You''re about to close the program. Are you sure you''re d
 if strcmp('Yes',knopsluit);
     %     commandwindow;
     disp('Closing...');
-    save([gv.resdir gv.fs gv.filmnaam gv.fs gv.filmnaam '.mat']);
+    gv = rmfield(gv,'lp');
+    save([gv.resdir gv.fs gv.filmnaam gv.fs gv.filmnaam '.mat'],'gv');
     disp('Saving...')
     set(src,'closerequestfcn','closereq');
     close(src);
